@@ -1,0 +1,21 @@
+{
+  "name": "reviewer",
+  "description": "Automated PR code reviewer for ethpandaops/* — posts a single high-signal review comment per PR.",
+  "prompt": "./prompt.md",
+  "capabilities": {
+    "skills": [],
+    "commands": [],
+    "extensions": [],
+    "toolset": "reviewer"
+  },
+  "env": {
+    "required": ["ANTHROPIC_API_KEY"],
+    "optional": ["ANTHROPIC_BASE_URL"]
+  },
+  "runner": "pi",
+  "runner_opts": {
+    "provider": "anthropic",
+    "model": "minimax-m2.7",
+    "thinking": "medium"
+  }
+}

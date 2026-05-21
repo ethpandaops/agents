@@ -1,0 +1,5 @@
+# mc install + runtime state — regenerated locally, never committed.
+# The project manifest (.mc/mc.json) IS committed; everything else under .mc/ is not.
+.mc/plugins/
+.mc/runtime/
+.mc/cache/

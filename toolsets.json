@@ -1,0 +1,14 @@
+{
+  "toolsets": {
+    "read-only": {
+      "description": "Inspection only — read files, grep, list directories. No shell, no edits.",
+      "tools": ["read", "grep", "ls"],
+      "includes": []
+    },
+    "reviewer": {
+      "description": "read-only plus bash, so the reviewer can verify claims it would otherwise only assume (OSV.dev advisory lookups, language-semantics repros, npm registry checks). Deliberately excludes edit/write — the reviewer never mutates the repo.",
+      "tools": ["bash"],
+      "includes": ["read-only"]
+    }
+  }
+}
