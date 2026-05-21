@@ -1,6 +1,6 @@
 # ethpandaops/agents
 
-Definitions for ethpandaops automation agents, packaged for [`mc`](https://git.starflinger.eu/starflinger/mc) — a zero-copy package manager for coding assistants. This repo is the **single source of truth** for what our agents say and do; improving an agent means opening a PR here, not touching the deploy pipeline.
+Definitions for ethpandaops automation agents, packaged for [`mc`](https://github.com/qu0b/mc) — a one-source-of-truth config tool for managed coding agents. This repo is the **single source of truth** for what our agents say and do; improving an agent means opening a PR here, not touching the deploy pipeline.
 
 Currently shipped:
 
@@ -14,24 +14,27 @@ This repo is itself an `mc` project (note the committed `.mc/mc.json`). Each age
 
 ```
 agents/reviewer/
-├── agent.json     # composition — runner, model, toolset, required env
+├── agent.json     # composition — runtime, model, provider, toolset, required env
 ├── prompt.md      # the agent's system prompt (the prose you'll most often edit)
 └── overrides/     # optional file-level overrides (unused for now)
 
 toolsets.json      # named tool bundles, shared across all agents (the allowlist)
 ```
 
-`agent.json` declares *how* the agent runs; `prompt.md` declares *what* it does. They're deliberately separate so prose changes don't touch config and vice-versa.
+`agent.json` is `mc`'s cross-runtime **superset** schema: a canonical core (`model`, `provider`, `thinking`, `prompt`, `capabilities`, `env`) plus optional fields, and `runtime` selects which runner the agent emits to (`pi` | `claude` | `hermes` | `openclaw`). `prompt.md` declares *what* the agent does; `agent.json` declares *how* it runs — kept separate so prose changes don't touch config and vice-versa.
 
 ```jsonc
 // agents/reviewer/agent.json
 {
   "name": "reviewer",
+  "description": "Automated PR code reviewer for ethpandaops/*",
+  "model": "minimax-m2.7",
+  "provider": "anthropic",
+  "thinking": "medium",
   "prompt": "./prompt.md",
   "capabilities": { "skills": [], "commands": [], "extensions": [], "toolset": "reviewer" },
   "env": { "required": ["ANTHROPIC_API_KEY"], "optional": ["ANTHROPIC_BASE_URL"] },
-  "runner": "pi",
-  "runner_opts": { "provider": "anthropic", "model": "minimax-m2.7", "thinking": "medium" }
+  "runtime": "pi"
 }
 ```
 
@@ -80,6 +83,7 @@ pi -p <prompt.md> --provider anthropic --model minimax-m2.7 --thinking medium \
 
 This repo is wired but not yet load-bearing. Before opening it to outside contributors:
 
-- [ ] **`mc validate` PR gate** — a required GitHub Action that runs `mc validate` on every PR, so a malformed agent can't reach the live reviewer. Pending a published `mc` binary (mc is Zig source today).
-- [ ] **Verify the provider wiring** — confirm `pi`'s `anthropic` provider honours `ANTHROPIC_BASE_URL` pointed at the LiteLLM gateway (`ai.starflinger.eu`) serving `minimax-m2.7`. If not, switch `runner_opts.provider` to `local` and configure pi's local provider instead. One-line change in `agent.json`.
+- [ ] **Publish an `mc` binary** — `mc` is Zig source (requires Zig 0.16) at [qu0b/mc](https://github.com/qu0b/mc); a built `linux/amd64` binary is needed before any consumer or CI can use it.
+- [ ] **`mc validate` PR gate** — a required GitHub Action that runs `mc validate` on every PR, so a malformed agent can't reach the live reviewer. Depends on the binary above.
+- [ ] **Verify the provider wiring** — confirm `pi`'s `anthropic` provider honours `ANTHROPIC_BASE_URL` pointed at the LiteLLM gateway (`ai.starflinger.eu`) serving `minimax-m2.7`. If not, switch `provider` to `local` (or `minimax`) and configure pi's provider accordingly. One-line change in `agent.json`.
 - [ ] **Wire the events-ingress reviewer container** to clone this repo and `mc run reviewer` instead of hand-rolling the `pi` invocation.
