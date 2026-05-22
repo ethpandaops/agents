@@ -2,9 +2,13 @@
   "name": "reviewer",
   "description": "Automated PR code reviewer for ethpandaops/* — posts a single high-signal review comment per PR.",
   "model": "minimax-m2.7",
-  "provider": "anthropic",
+  "provider": "local-llm",
   "thinking": "medium",
   "prompt": "./prompt.md",
+  "base_url": "https://ai.starflinger.eu",
+  "api_key_env": "LITELLM_API_KEY",
+  "context_window": 196608,
+  "max_tokens": 64000,
   "capabilities": {
     "skills": [],
     "commands": [],
@@ -12,8 +16,8 @@
     "toolset": "reviewer"
   },
   "env": {
-    "required": ["ANTHROPIC_API_KEY"],
-    "optional": ["ANTHROPIC_BASE_URL"]
+    "required": ["LITELLM_API_KEY"],
+    "optional": []
   },
   "runtime": "pi"
 }
