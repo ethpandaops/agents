@@ -1,0 +1,20 @@
+name: validate
+
+# The live reviewer is deployed by clone-per-run: the events-ingress container
+# clones this repo @main on every PR and parses the agent package with jq — there
+# is no build artifact, so a merge to main IS the deploy. This workflow is the
+# gate that protects that: every PR and every push to main must pass validation
+# before (PR) or as (main) the package goes live.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate agent package
+        run: ./scripts/validate.sh
