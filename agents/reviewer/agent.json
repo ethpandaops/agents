@@ -1,9 +1,9 @@
 {
   "name": "reviewer",
   "description": "Automated PR code reviewer for ethpandaops/* — posts a single high-signal review comment per PR.",
-  "model": "minimax-m2.7",
+  "model": "starflinger-anthropic",
   "provider": "local-llm",
-  "thinking": "medium",
+  "thinking": "high",
   "reasoning": true,
   "prompt": "./prompt.md",
   "base_url": "https://ai.starflinger.eu",
