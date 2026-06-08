@@ -53,12 +53,16 @@ To widen what an agent *can* do, you change the toolset definition (a reviewable
 2. Open a PR. Keep prompt changes focused — this is a shared reviewer running across many repos.
 3. On merge, the next review picks up the change (see *Consumption* — no container rebuild).
 
-Validate locally before pushing:
+Validate locally before pushing — the same check CI runs on every PR and on
+every push to `main`:
 
 ```sh
-mc validate            # checks every agent.json + toolsets.json + cross-refs; exit 1 on error
-mc run reviewer --dry-run    # prints the exact pi argv + the composed prompt, runs nothing
+./scripts/validate.sh        # checks every agent.json + toolsets.json + cross-refs; exit 1 on error
 ```
+
+(`scripts/validate.sh` is pure bash + `jq` — it mirrors the contract the live
+container parses, so it needs no `mc`/Zig toolchain. `mc validate` /
+`mc run reviewer --dry-run` remain useful locally once an `mc` binary is built.)
 
 ## Consumption
 
@@ -73,17 +77,31 @@ mc run reviewer -- @pr-context.md
 `mc run` resolves the toolset, checks required env vars are present (fails fast otherwise), reads `prompt.md`, and exec's:
 
 ```
-pi -p <prompt.md> --provider anthropic --model minimax-m2.7 --thinking medium \
+pi -p <prompt.md> --provider local-llm --model starflinger-anthropic --thinking high \
    --tools bash,read,grep,ls --no-skills --no-extensions  @pr-context.md
 ```
 
+(The live events-ingress container reproduces this exact invocation from
+`agent.json` using `jq` rather than the `mc` binary — see *CI / deploy*.)
+
 `prompt.md` is the first message (the standing instructions); the per-PR context (`@pr-context.md`) is appended as the next message.
+
+## CI / deploy
+
+There is **no build step and no deploy step** for an agent change. The
+events-ingress reviewer container clones this repo `@main` on every PR and reads
+the package with `jq` (no `mc` binary in the container), so **a merge to `main`
+is the deploy** — the next review picks it up.
+
+The [`validate`](.github/workflows/validate.yml) workflow (`scripts/validate.sh`)
+is the gate that protects that live path: it runs on every PR and on every push
+to `main`, asserting JSON validity, required fields, a real `thinking` level,
+existing prompt files, and that each agent's toolset resolves. A malformed agent
+fails the check before (PR) or as (main) it would otherwise go live.
 
 ## Open items (pre-contributor)
 
-This repo is wired but not yet load-bearing. Before opening it to outside contributors:
-
-- [ ] **Publish an `mc` binary** — `mc` is Zig source (requires Zig 0.16) at [qu0b/mc](https://github.com/qu0b/mc); a built `linux/amd64` binary is needed before any consumer or CI can use it.
-- [ ] **`mc validate` PR gate** — a required GitHub Action that runs `mc validate` on every PR, so a malformed agent can't reach the live reviewer. Depends on the binary above.
-- [ ] **Verify the provider wiring** — confirm `pi`'s `anthropic` provider honours `ANTHROPIC_BASE_URL` pointed at the LiteLLM gateway (`ai.starflinger.eu`) serving `minimax-m2.7`. If not, switch `provider` to `local` (or `minimax`) and configure pi's provider accordingly. One-line change in `agent.json`.
-- [ ] **Wire the events-ingress reviewer container** to clone this repo and `mc run reviewer` instead of hand-rolling the `pi` invocation.
+- [x] **PR/main validation gate** — `scripts/validate.sh` via GitHub Actions (jq-based; no `mc` binary needed).
+- [x] **Provider wiring verified** — `pi` ignores `ANTHROPIC_BASE_URL`; routing to the LiteLLM gateway (`ai.starflinger.eu`) is done with `provider: local-llm` + `base_url` + `api_key_env`, materialised into pi's `models.json`. The live container does exactly this.
+- [x] **Container wired to this repo** — the events-ingress container clones `ethpandaops/agents@main` and consumes the mc-format package via `jq` (deliberately not the `mc` binary, to avoid a Zig-0.16 build in Docker).
+- [ ] **Publish an `mc` binary** — `mc` is Zig source (requires Zig 0.16) at [qu0b/mc](https://github.com/qu0b/mc); a built `linux/amd64` binary would let local authors use `mc run reviewer --dry-run`. Not on the deploy critical path.
