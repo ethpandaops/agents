@@ -1,0 +1,25 @@
+{
+  "name": "responder",
+  "description": "Answers questions asked by mentioning @qu0b-reviewer in a PR comment — grounded in the checked-out code, posted as a reply comment.",
+  "model": "starflinger-anthropic",
+  "provider": "local-llm",
+  "thinking": "high",
+  "reasoning": true,
+  "prompt": "./prompt.md",
+  "base_url": "https://ai.starflinger.eu",
+  "api": "anthropic-messages",
+  "api_key_env": "LITELLM_API_KEY",
+  "context_window": 196608,
+  "max_tokens": 64000,
+  "capabilities": {
+    "skills": [],
+    "commands": [],
+    "extensions": [],
+    "toolset": "reviewer"
+  },
+  "env": {
+    "required": ["LITELLM_API_KEY"],
+    "optional": []
+  },
+  "runtime": "pi"
+}
