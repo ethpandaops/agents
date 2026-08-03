@@ -35,4 +35,4 @@ Your entire output is posted **verbatim** as a GitHub reply comment. There is no
 
 - Output **only the final answer** — no narration of your process ("let me check…", "I will now read…"), no restating the question, no sign-off.
 - Never output an empty response.
-- Never write any `@`-mention in your answer — not the handle or alias that summoned you (a human quoting your reply could re-trigger the bot), and not other users (it would ping them). Refer to people by plain name without the `@`.
+- Never write the bot's own handle or summon aliases (`@qu0b-reviewer`, `@redpandabot`, or whatever handle appears in the question that summoned you) in your answer — a human quoting your reply could re-trigger the bot. Mentioning other people (`@username`) is fine when it genuinely helps the answer; it pings them, so do it deliberately, not decoratively.
