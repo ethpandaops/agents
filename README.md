@@ -134,7 +134,7 @@ does nothing under a plain `mc run`.
 |---|---|---|---|---|
 | `review` | PR opened / pushed; or the `redpanda-review` label | `reviewer` | `pr-context.md` | the review, threads, approval (see below) |
 | `question` | a PR conversation comment starting `redpanda …` | `responder` | `question-context.md` | a reply comment |
-| `thread` | a reply in an inline review thread — ours, or any thread when it starts `redpanda …` | `responder` | `thread-context.md` | a thread reply; resolves our own finding only when a later change addressed it (see below) |
+| `thread` | a reply in an inline review thread — ours, or any thread when it starts `redpanda …` | `responder` | `thread-context.md` | a thread reply, saying whether a later change addressed our finding; never a resolve (see below) |
 | `ci` | a PR's workflow run failed | `ci-doctor` | `ci-context.md` | one CI comment per PR, edited in place; collapsed once the PR's head has no failed run |
 | `issue` | an issue comment starting `redpanda …`, or the label on an issue (off by default: the Worker's `ISSUE_MODE`) | `responder` | `issue-context.md` | a reply comment |
 
@@ -159,7 +159,9 @@ Every context may carry two sections the prompts are written against:
 exits cleanly, `finalize-structured.js` (bruno `events-ingress`) replays the
 session to `starflinger-openai` with one more user turn and a strict JSON
 schema, which the engine enforces: `{summary, findings[]}` for review,
-`{reply}` for thread, `{summary, failures[]}` for ci. That step may add
+`{reply}` for thread, `{summary, failures[]}` for ci. A thread `reply` that is
+empty or the `NO_REPLY_NEEDED` sentinel is not posted: the pipeline reacts ❤️
+instead (result `acked`). That step may add
 nothing the session did not establish, and keeps each finding's `title` and
 `inline` as the agent's block set them. The reviewer's closing `json` block
 stays in the prompt as the draft, and as the fallback: if pi failed, or
