@@ -86,12 +86,30 @@ pi -p <prompt.md> --provider local-llm --model starflinger-anthropic --thinking 
 
 `prompt.md` is the first message (the standing instructions); the per-PR context (`@pr-context.md`) is appended as the next message.
 
+### What the runtime provides beyond the toolset
+
+The events-ingress container runs the agent as its own unprivileged user, with
+an empty environment except for:
+
+- **`gh`**, logged in with a **read-only** token (`contents`, `issues`,
+  `pull_requests`) scoped to **the PR's repository only**. The token is
+  revoked when pi exits.
+- **`react <emoji>` / `react --remove <emoji>`**, a shell command (call it
+  through `bash`, it is not a pi tool) that adds or removes the bot's reaction
+  on this PR and nothing else. The agent holds no token that can write:
+  GitHub's least permission that can react can also approve and comment.
+
+These commands exist only in that container. A prompt that relies on them
+does nothing under a plain `mc run`.
+
 ## CI / deploy
 
-There is **no build step and no deploy step** for an agent change. The
-events-ingress reviewer container clones this repo `@main` on every PR and reads
-the package with `jq` (no `mc` binary in the container), so **a merge to `main`
-is the deploy** — the next review picks it up.
+There is **no build step** for an agent change, but a merge is **not** the
+deploy. The events-ingress reviewer container fetches this repo at a **pinned
+commit**, `AGENTS_REF` in bruno's `events-ingress/worker/wrangler.toml`, and
+reads the package with `jq` (no `mc` binary in the container). A change goes
+live when that pin moves, which is a Worker deploy of a few seconds. The pin
+exists because the prompt and the container share the findings contract.
 
 The [`validate`](.github/workflows/validate.yml) workflow (`scripts/validate.sh`)
 is the gate that protects that live path: it runs on every PR and on every push
