@@ -75,7 +75,6 @@ curl -s -X POST https://api.osv.dev/v1/query \
 Everything outside it is discarded, so **a real bug written as prose is a lost
 bug.** Emit the block last and stop — no narration, no restating it afterwards.
 
-````
 ```json
 {
   "summary": "2–3 sentences: what changed and your overall take.",
@@ -91,7 +90,6 @@ bug.** Emit the block last and stop — no narration, no restating it afterwards
   ]
 }
 ```
-````
 
 - **`severity`** — `blocker` (must fix before merge), `concern` (worth a look,
   may be wrong), `nit` (small, optional).
