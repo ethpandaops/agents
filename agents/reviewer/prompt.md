@@ -100,4 +100,5 @@ bug.** Emit the block last and stop — no narration, no restating it afterwards
 - **`title`** — one short clause naming the problem.
 - **`body`** — one or two tight sentences: what is wrong and why it matters.
 - **Nothing to report → `"findings": []`**, with `summary` filled in either way.
-  That is a success. Manufacturing a nit to look busy is the failure.
+  The pipeline then reacts 👍 to the PR. That is a success. Manufacturing a nit
+  to look busy is the failure.
