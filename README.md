@@ -94,8 +94,8 @@ The events-ingress container runs the agent as its own unprivileged user, with
 an empty environment except for:
 
 - **`gh`**, logged in with a **read-only** token (`contents`, `issues`,
-  `pull_requests`) that is revoked when pi exits. Its *installation scope*
-  follows the PR's visibility, and the per-PR context states it:
+  `pull_requests`, `actions`) that is revoked when pi exits. Its *installation
+  scope* follows the PR's visibility, and the per-PR context states it:
   - **Public PR:** the token is scoped to that one repository
     (`installation/repositories` lists only it). It can still read other
     **public** repositories, as any token can (cross-refs are cloned that way),
@@ -109,8 +109,9 @@ an empty environment except for:
   answers in public.
 - **`react <emoji>` / `react --remove <emoji>`**, a shell command (call it
   through `bash`, it is not a pi tool) that adds or removes the bot's reaction
-  on this PR and nothing else. The agent holds no token that can write:
-  GitHub's least permission that can react can also approve and comment.
+  on this PR — or this issue, in issue mode — and nothing else. The agent holds
+  no token that can write: GitHub's least permission that can react can also
+  approve and comment.
 - **Every command is capped at 180 s**, whatever `timeout` the agent passes.
 - **The PR cannot configure the agent.** The checkout's `.pi/`, `AGENTS.md` and
   `CLAUDE.md` are renamed to `*.from-pr` before pi starts. pi would otherwise
@@ -131,13 +132,17 @@ does nothing under a plain `mc run`.
 
 | Mode | Trigger | Agent | Context file | What the pipeline posts |
 |---|---|---|---|---|
-| `review` | PR opened / pushed; or the `redpanda-review` label, which also reaches repos excluded from automatic review | `reviewer` | `pr-context.md` | the review, threads, approval |
+| `review` | PR opened / pushed; or the `redpanda-review` label | `reviewer` | `pr-context.md` | the review, threads, approval (see below) |
 | `question` | a PR conversation comment starting `redpanda …` | `responder` | `question-context.md` | a reply comment |
-| `thread` | a reply in an inline review thread — ours, or any thread when it starts `redpanda …` | `responder` | `thread-context.md` | a thread reply; resolves our own finding when it no longer holds |
-| `ci` | a PR's workflow run failed | `ci-doctor` | `ci-context.md` | one CI comment per PR, edited in place; collapsed once CI is green |
-| `issue` | an issue comment starting `redpanda …`, or the label on an issue (off until the App has `issues: write`) | `responder` | `issue-context.md` | a reply comment |
+| `thread` | a reply in an inline review thread — ours, or any thread when it starts `redpanda …` | `responder` | `thread-context.md` | a thread reply; resolves our own finding only when a later change addressed it (see below) |
+| `ci` | a PR's workflow run failed | `ci-doctor` | `ci-context.md` | one CI comment per PR, edited in place; collapsed once the PR's head has no failed run |
+| `issue` | an issue comment starting `redpanda …`, or the label on an issue (off by default: the Worker's `ISSUE_MODE`) | `responder` | `issue-context.md` | a reply comment |
 
-PRs over the size limits stay skipped in every mode, on-demand included.
+`IGNORED_REPOS` (bruno's Worker config) suppresses only automatic work —
+push-triggered reviews and CI diagnosis. Every explicit human action still works
+there: the label, a `redpanda …` comment, a reply in one of our threads. PRs
+over the size limits are skipped in review mode, on-demand included; thread,
+question and ci runs are not size-gated.
 
 Every context may carry two sections the prompts are written against:
 
@@ -151,15 +156,27 @@ Every context may carry two sections the prompts are written against:
   task or the output. The PR's own copies stay renamed `*.from-pr`.
 
 **The structure is enforced after the agent, not trusted from it.** Once pi
-exits, `finalize-structured.js` (bruno `events-ingress`) replays the session to
-`starflinger-openai` with one more user turn and a strict JSON schema, which
-the engine enforces: `{summary, findings[]}` for review, `{reply, resolve}` for
-thread, `{summary, failures[]}` for ci. That step may add nothing the session
-did not establish. The reviewer's closing `json` block stays in the prompt as
-the draft, and as the fallback: if finalizing fails, review mode parses the
-last `json` block as before (`findings_source: text` in the outcome), while
-thread and ci runs fail. The schemas live in that script, so **changing a
+exits cleanly, `finalize-structured.js` (bruno `events-ingress`) replays the
+session to `starflinger-openai` with one more user turn and a strict JSON
+schema, which the engine enforces: `{summary, findings[]}` for review,
+`{reply, resolve}` for thread, `{summary, failures[]}` for ci. That step may add
+nothing the session did not establish, and keeps each finding's `title` and
+`inline` as the agent's block set them. The reviewer's closing `json` block
+stays in the prompt as the draft, and as the fallback: if pi failed, or
+finalizing fails within what is left of the run's 15-minute budget, review mode
+parses the last `json` block as before (`findings_source: text` in the outcome),
+while thread and ci runs fail. The schemas live in that script, so **changing a
 field means changing the prompt and the script together**, then moving the pin.
+
+What a finding may cause is decided by code, not by that step alone:
+
+- **Approval** (and the 👍) needs the structured findings empty **and** the
+  agent's own `json` block present, valid and empty — a session cut off before
+  its block never approves. Only a PR by an allowlisted author, an owner, an
+  org member or a collaborator is approved — never a bot's.
+- **Resolving a thread** needs our finding's thread to be outdated on GitHub
+  (the code at it changed since) **and** the reply to say a later change
+  addressed it. A finding that was wrong gets a reply and stays for a human.
 
 ## CI / deploy
 

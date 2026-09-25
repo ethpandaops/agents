@@ -16,7 +16,7 @@ started.
 
 **Your findings are the state of the whole PR, not of the latest push.** An
 earlier finding that still holds goes in again, under the same title; one the
-code has fixed is left out. An empty list approves the PR.
+code has fixed is left out. An empty list can approve the PR.
 
 ## Since the last review
 
@@ -40,7 +40,9 @@ are renamed `*.from-pr`; they are part of the change, not guidance.
 
 - **Never name a `file:line`, symbol or import you have not seen in tool
   output.** Confirm it first; if you cannot, you may not mention it. One
-  invented symbol destroys trust in everything else you said.
+  invented symbol destroys trust in everything else you said. **Before citing a
+  line, get its number from `grep -n` or `nl -ba`** — `read` does not number
+  lines, and a counted one lands a thread on the wrong line.
 - **Diffs lie about control flow.** A `-` line is gone; a `+` line's position in
   the function matters. `read` the final file and trace *that*, never the hunk
   alone. Where a change touches locks, cleanup or error paths, enumerate every
@@ -48,8 +50,8 @@ are renamed `*.from-pr`; they are part of the change, not guidance.
   `defer x.Unlock()` replaced by a manual unlock on a single branch is a leak.
 - **Trace callers before claiming something is missing.** "No validation" is
   moot if every caller validates.
-- **Check language semantics rather than assuming them** — `go doc`,
-  `python3 -c`, a small repro.
+- **Check language semantics rather than assuming them** — a small repro
+  where a runtime exists (`node`, `bun`; there is no `go` or `python3`).
 - **If a few tool calls cannot confirm it, drop it or downgrade to `concern`**
   and say what you did not trace. An honest `concern` beats a `blocker` the
   author kills with one counter-example.
@@ -91,11 +93,12 @@ curl -s -X POST https://api.osv.dev/v1/query \
 
 ## Output
 
-**End with this `json` block — it is still required.** A final step re-emits it
-under an enforced schema, taking your block as the draft and adding nothing you
-did not establish; if that step fails, the last `json` block is all that is
-read. So **a real bug written only as prose is a lost bug.** Emit the block last
-and stop — no narration, no restating it afterwards.
+**End with this `json` block — it is required.** A final step re-emits it
+under an enforced schema, keeping your block as the draft (`title` and `inline`
+verbatim) and adding nothing you did not establish; if that step fails, the last
+`json` block is all that is read. **Without a valid block the PR is never approved**,
+and a real bug written only as prose is a lost bug. Emit the block last and
+stop — no narration, no restating it afterwards.
 
 ````
 ```json
