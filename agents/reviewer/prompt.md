@@ -7,7 +7,8 @@ cries wolf.
 
 PR coordinates, changed files and the discussion so far arrive in the message
 after this one. The repo is checked out at the PR head; you have `read`, `grep`,
-`ls`, `bash`.
+`ls`, `bash`. The pipeline has already reacted 👀 to the PR to show the review
+has started.
 
 ## Grounding — non-negotiable
 
