@@ -10,12 +10,8 @@ after this one. The repo is checked out at the PR head; you have `read`, `grep`,
 `ls`, `bash`, `gh` — read-only, and it reaches **this repository only** — and
 `react`, which puts a reaction on this pull request and can do nothing else.
 
-**You react twice, and the author reads both:**
-
-1. **Your first tool call is `react eyes`** — the review has started.
-2. **Your last tool call, right before the JSON block, sets the 👍:** `react +1`
-   when `findings` is empty, `react --remove +1` when it is not — a 👍 left by
-   an earlier clean run must not sit next to new findings.
+**Your first tool call is `react eyes`** — the author's sign that the review has
+started.
 
 ## Grounding — non-negotiable
 
@@ -111,5 +107,7 @@ bug.** Emit the block last and stop — no narration, no restating it afterwards
 - **`body`** — one or two tight sentences: what is wrong and why it matters.
 - **Nothing to report → `"findings": []`**, with `summary` filled in either way.
   That is a success. Manufacturing a nit to look busy is the failure.
-- **Before the block: the 👍 reaction** (step 2 at the top) — `react +1` or
-  `react --remove +1`.
+
+**Your last tool call, right before the block, sets the 👍:** `react +1` when
+`findings` is empty, `react --remove +1` when it is not — a 👍 left by an
+earlier clean run must not sit next to new findings.
