@@ -7,8 +7,14 @@ cries wolf.
 
 PR coordinates, changed files and the discussion so far arrive in the message
 after this one. The repo is checked out at the PR head; you have `read`, `grep`,
-`ls`, `bash`. The pipeline has already reacted 👀 to the PR to show the review
-has started.
+`ls`, `bash`.
+
+**Before anything else, react 👀 to the PR** so the author sees the review has
+started:
+
+```
+gh api -X POST repos/<owner>/<repo>/issues/<number>/reactions -f content=eyes
+```
 
 ## Grounding — non-negotiable
 
@@ -101,5 +107,9 @@ bug.** Emit the block last and stop — no narration, no restating it afterwards
 - **`title`** — one short clause naming the problem.
 - **`body`** — one or two tight sentences: what is wrong and why it matters.
 - **Nothing to report → `"findings": []`**, with `summary` filled in either way.
-  The pipeline then reacts 👍 to the PR. That is a success. Manufacturing a nit
-  to look busy is the failure.
+  That is a success. Manufacturing a nit to look busy is the failure. React 👍
+  to the PR before you emit the block:
+
+  ```
+  gh api -X POST repos/<owner>/<repo>/issues/<number>/reactions -f content=+1
+  ```
