@@ -51,7 +51,7 @@ To widen what an agent *can* do, you change the toolset definition (a reviewable
 
 1. Edit `agents/<name>/prompt.md` (behaviour) and/or `agents/<name>/agent.json` (model, toolset, thinking).
 2. Open a PR. Keep prompt changes focused — this is a shared reviewer running across many repos.
-3. On merge, the next review picks up the change (see *Consumption* — no container rebuild).
+3. Merge, then move `AGENTS_REF` in bruno's `events-ingress/worker/wrangler.toml` to the new commit. The change goes live with that Worker deploy, and no container rebuild is needed (see *CI / deploy*).
 
 Validate locally before pushing — the same check CI runs on every PR and on
 every push to `main`:
