@@ -92,11 +92,19 @@ The events-ingress container runs the agent as its own unprivileged user, with
 an empty environment except for:
 
 - **`gh`**, logged in with a **read-only** token (`contents`, `issues`,
-  `pull_requests`) that is revoked when pi exits. What it reaches follows the
-  PR's visibility, and the per-PR context states it. On a **public** PR it
-  reaches public repositories only. On a **private** PR it also reaches every
-  repository of that owner, private ones included, and never another owner's.
-  Private data therefore never reaches a run that answers in public.
+  `pull_requests`) that is revoked when pi exits. Its *installation scope*
+  follows the PR's visibility, and the per-PR context states it:
+  - **Public PR:** the token is scoped to that one repository
+    (`installation/repositories` lists only it). It can still read other
+    **public** repositories, as any token can (cross-refs are cloned that way),
+    but it reads no private repository.
+  - **Private PR:** the token covers the owner's whole installation (today
+    every repository of that owner), so it also reads the owner's private
+    repositories, never another owner's.
+
+  Permission-gated endpoints such as `collaborators` need more than read and
+  return 403 everywhere. As a result, private data never reaches a run that
+  answers in public.
 - **`react <emoji>` / `react --remove <emoji>`**, a shell command (call it
   through `bash`, it is not a pi tool) that adds or removes the bot's reaction
   on this PR and nothing else. The agent holds no token that can write:
@@ -106,9 +114,13 @@ an empty environment except for:
   `CLAUDE.md` are renamed to `*.from-pr` before pi starts. pi would otherwise
   load them as settings (`shellCommandPrefix` runs on every command) and as
   system-prompt instructions. They stay readable as ordinary files.
-- **The 👍 is the pipeline's**, not the prompt's: it is set on zero findings and
-  withdrawn otherwise, like the approval. The prompt owned it until it was
-  measured: the agent's closing step ran 2 times in 6.
+- **The 👍 is the pipeline's**, not the prompt's. It is set on zero findings
+  and withdrawn otherwise, like the approval (bruno `events-ingress`
+  `run-review.sh`, since image v44). The prompt owned it until it was measured:
+  the agent's closing step ran 2 times in 6. Observed in production on
+  `qu0b/reviewer-sandbox-private#1`, 2026-09-25: a 🔴 finding withdrew a
+  standing 👍 (15:29Z), and the fix push set it again with the approval
+  (15:30Z).
 
 These commands exist only in that container. A prompt that relies on them
 does nothing under a plain `mc run`.
