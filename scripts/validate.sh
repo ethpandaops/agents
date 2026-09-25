@@ -2,10 +2,10 @@
 #
 # validate.sh — gate the agent package before it reaches the live reviewer.
 #
-# The events-ingress container clones this repo @main on every review and parses
-# the package with `jq` (no mc binary). This script validates the exact same
-# contract the container relies on, so a malformed agent can't go live via a
-# clone-per-run deploy. Pure bash + jq — no Zig/mc toolchain required.
+# The events-ingress container fetches this repo at a pinned commit (AGENTS_REF)
+# on every review and parses the package with `jq` (no mc binary). This script
+# validates the exact contract the container relies on, so a malformed agent
+# fails here, before anyone pins it. Pure bash + jq; no Zig/mc toolchain needed.
 #
 # Exit 0 = package is consumable; exit 1 = at least one error (all reported).
 

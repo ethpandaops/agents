@@ -51,7 +51,7 @@ To widen what an agent *can* do, you change the toolset definition (a reviewable
 
 1. Edit `agents/<name>/prompt.md` (behaviour) and/or `agents/<name>/agent.json` (model, toolset, thinking).
 2. Open a PR. Keep prompt changes focused — this is a shared reviewer running across many repos.
-3. On merge, the next review picks up the change (see *Consumption* — no container rebuild).
+3. Merge, then move `AGENTS_REF` in bruno's `events-ingress/worker/wrangler.toml` to the new commit. The change goes live with that Worker deploy, and no container rebuild is needed (see *CI / deploy*).
 
 Validate locally before pushing — the same check CI runs on every PR and on
 every push to `main`:
@@ -86,12 +86,53 @@ pi -p <prompt.md> --provider local-llm --model starflinger-anthropic --thinking 
 
 `prompt.md` is the first message (the standing instructions); the per-PR context (`@pr-context.md`) is appended as the next message.
 
+### What the runtime provides beyond the toolset
+
+The events-ingress container runs the agent as its own unprivileged user, with
+an empty environment except for:
+
+- **`gh`**, logged in with a **read-only** token (`contents`, `issues`,
+  `pull_requests`) that is revoked when pi exits. Its *installation scope*
+  follows the PR's visibility, and the per-PR context states it:
+  - **Public PR:** the token is scoped to that one repository
+    (`installation/repositories` lists only it). It can still read other
+    **public** repositories, as any token can (cross-refs are cloned that way),
+    but it reads no private repository.
+  - **Private PR:** the token covers the owner's whole installation (today
+    every repository of that owner), so it also reads the owner's private
+    repositories, never another owner's.
+
+  Permission-gated endpoints such as `collaborators` need more than read and
+  return 403 everywhere. As a result, private data never reaches a run that
+  answers in public.
+- **`react <emoji>` / `react --remove <emoji>`**, a shell command (call it
+  through `bash`, it is not a pi tool) that adds or removes the bot's reaction
+  on this PR and nothing else. The agent holds no token that can write:
+  GitHub's least permission that can react can also approve and comment.
+- **Every command is capped at 180 s**, whatever `timeout` the agent passes.
+- **The PR cannot configure the agent.** The checkout's `.pi/`, `AGENTS.md` and
+  `CLAUDE.md` are renamed to `*.from-pr` before pi starts. pi would otherwise
+  load them as settings (`shellCommandPrefix` runs on every command) and as
+  system-prompt instructions. They stay readable as ordinary files.
+- **The 👍 is the pipeline's**, not the prompt's. It is set on zero findings
+  and withdrawn otherwise, like the approval (bruno `events-ingress`
+  `run-review.sh`, since image v44). The prompt owned it until it was measured:
+  the agent's closing step ran 2 times in 6. Observed in production on
+  `qu0b/reviewer-sandbox-private#1`, 2026-09-25: a 🔴 finding withdrew a
+  standing 👍 (15:29Z), and the fix push set it again with the approval
+  (15:30Z).
+
+These commands exist only in that container. A prompt that relies on them
+does nothing under a plain `mc run`.
+
 ## CI / deploy
 
-There is **no build step and no deploy step** for an agent change. The
-events-ingress reviewer container clones this repo `@main` on every PR and reads
-the package with `jq` (no `mc` binary in the container), so **a merge to `main`
-is the deploy** — the next review picks it up.
+There is **no build step** for an agent change, but a merge is **not** the
+deploy. The events-ingress reviewer container fetches this repo at a **pinned
+commit**, `AGENTS_REF` in bruno's `events-ingress/worker/wrangler.toml`, and
+reads the package with `jq` (no `mc` binary in the container). A change goes
+live when that pin moves, which is a Worker deploy of a few seconds. The pin
+exists because the prompt and the container share the findings contract.
 
 The [`validate`](.github/workflows/validate.yml) workflow (`scripts/validate.sh`)
 is the gate that protects that live path: it runs on every PR and on every push
@@ -103,5 +144,5 @@ fails the check before (PR) or as (main) it would otherwise go live.
 
 - [x] **PR/main validation gate** — `scripts/validate.sh` via GitHub Actions (jq-based; no `mc` binary needed).
 - [x] **Provider wiring verified** — `pi` ignores `ANTHROPIC_BASE_URL`; routing to the LiteLLM gateway (`ai.starflinger.eu`) is done with `provider: local-llm` + `base_url` + `api_key_env`, materialised into pi's `models.json`. The live container does exactly this.
-- [x] **Container wired to this repo** — the events-ingress container clones `ethpandaops/agents@main` and consumes the mc-format package via `jq` (deliberately not the `mc` binary, to avoid a Zig-0.16 build in Docker).
+- [x] **Container wired to this repo** — the events-ingress container fetches `ethpandaops/agents` at the pinned `AGENTS_REF` and consumes the mc-format package via `jq` (deliberately not the `mc` binary, to avoid a Zig-0.16 build in Docker).
 - [ ] **Publish an `mc` binary** — `mc` is Zig source (requires Zig 0.16) at [qu0b/mc](https://github.com/qu0b/mc); a built `linux/amd64` binary would let local authors use `mc run reviewer --dry-run`. Not on the deploy critical path.

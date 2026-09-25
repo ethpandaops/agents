@@ -1,10 +1,10 @@
 name: validate
 
-# The live reviewer is deployed by clone-per-run: the events-ingress container
-# clones this repo @main on every PR and parses the agent package with jq — there
-# is no build artifact, so a merge to main IS the deploy. This workflow is the
-# gate that protects that: every PR and every push to main must pass validation
-# before (PR) or as (main) the package goes live.
+# The live reviewer fetches this repo at a pinned commit (AGENTS_REF in bruno's
+# events-ingress) and parses the agent package with jq. There is no build
+# artifact, so what gets pinned is exactly what runs. This workflow is the gate:
+# every PR and every push to main must pass validation before a commit is
+# eligible to be pinned.
 
 on:
   pull_request:
