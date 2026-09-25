@@ -101,6 +101,11 @@ an empty environment except for:
   through `bash`, it is not a pi tool) that adds or removes the bot's reaction
   on this PR and nothing else. The agent holds no token that can write:
   GitHub's least permission that can react can also approve and comment.
+- **Every command is capped at 180 s**, whatever `timeout` the agent passes.
+- **The PR cannot configure the agent.** The checkout's `.pi/`, `AGENTS.md` and
+  `CLAUDE.md` are renamed to `*.from-pr` before pi starts. pi would otherwise
+  load them as settings (`shellCommandPrefix` runs on every command) and as
+  system-prompt instructions. They stay readable as ordinary files.
 - **The 👍 is the pipeline's**, not the prompt's: it is set on zero findings and
   withdrawn otherwise, like the approval. The prompt owned it until it was
   measured: the agent's closing step ran 2 times in 6.
