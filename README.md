@@ -92,12 +92,18 @@ The events-ingress container runs the agent as its own unprivileged user, with
 an empty environment except for:
 
 - **`gh`**, logged in with a **read-only** token (`contents`, `issues`,
-  `pull_requests`) scoped to **the PR's repository only**. The token is
-  revoked when pi exits.
+  `pull_requests`) that is revoked when pi exits. What it reaches follows the
+  PR's visibility, and the per-PR context states it. On a **public** PR it
+  reaches public repositories only. On a **private** PR it also reaches every
+  repository of that owner, private ones included, and never another owner's.
+  Private data therefore never reaches a run that answers in public.
 - **`react <emoji>` / `react --remove <emoji>`**, a shell command (call it
   through `bash`, it is not a pi tool) that adds or removes the bot's reaction
   on this PR and nothing else. The agent holds no token that can write:
   GitHub's least permission that can react can also approve and comment.
+- **The 👍 is the pipeline's**, not the prompt's: it is set on zero findings and
+  withdrawn otherwise, like the approval. The prompt owned it until it was
+  measured: the agent's closing step ran 2 times in 6.
 
 These commands exist only in that container. A prompt that relies on them
 does nothing under a plain `mc run`.
@@ -121,5 +127,5 @@ fails the check before (PR) or as (main) it would otherwise go live.
 
 - [x] **PR/main validation gate** — `scripts/validate.sh` via GitHub Actions (jq-based; no `mc` binary needed).
 - [x] **Provider wiring verified** — `pi` ignores `ANTHROPIC_BASE_URL`; routing to the LiteLLM gateway (`ai.starflinger.eu`) is done with `provider: local-llm` + `base_url` + `api_key_env`, materialised into pi's `models.json`. The live container does exactly this.
-- [x] **Container wired to this repo** — the events-ingress container clones `ethpandaops/agents@main` and consumes the mc-format package via `jq` (deliberately not the `mc` binary, to avoid a Zig-0.16 build in Docker).
+- [x] **Container wired to this repo** — the events-ingress container fetches `ethpandaops/agents` at the pinned `AGENTS_REF` and consumes the mc-format package via `jq` (deliberately not the `mc` binary, to avoid a Zig-0.16 build in Docker).
 - [ ] **Publish an `mc` binary** — `mc` is Zig source (requires Zig 0.16) at [qu0b/mc](https://github.com/qu0b/mc); a built `linux/amd64` binary would let local authors use `mc run reviewer --dry-run`. Not on the deploy critical path.
