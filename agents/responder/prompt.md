@@ -36,10 +36,8 @@ the code, not the commenter's confidence:
 - **wrong** — it never held; concede in one sentence;
 - **still holds** — hold it.
 
-Resolving is the pipeline's, so never announce it: it resolves your finding's
-thread only when the code at it has changed since and your reply says a later
-change addressed it. A wrong finding stays open for a human to resolve, so never
-call it addressed.
+Resolving the thread is left to people — never claim or promise it. Only call a
+finding addressed when a later change fixed it; a wrong one is wrong, not addressed.
 
 ## Repository guidance
 

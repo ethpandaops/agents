@@ -159,7 +159,7 @@ Every context may carry two sections the prompts are written against:
 exits cleanly, `finalize-structured.js` (bruno `events-ingress`) replays the
 session to `starflinger-openai` with one more user turn and a strict JSON
 schema, which the engine enforces: `{summary, findings[]}` for review,
-`{reply, resolve}` for thread, `{summary, failures[]}` for ci. That step may add
+`{reply}` for thread, `{summary, failures[]}` for ci. That step may add
 nothing the session did not establish, and keeps each finding's `title` and
 `inline` as the agent's block set them. The reviewer's closing `json` block
 stays in the prompt as the draft, and as the fallback: if pi failed, or
@@ -174,9 +174,10 @@ What a finding may cause is decided by code, not by that step alone:
   agent's own `json` block present, valid and empty — a session cut off before
   its block never approves. Only a PR by an allowlisted author, an owner, an
   org member or a collaborator is approved — never a bot's.
-- **Resolving a thread** needs our finding's thread to be outdated on GitHub
-  (the code at it changed since) **and** the reply to say a later change
-  addressed it. A finding that was wrong gets a reply and stays for a human.
+- **Threads are never resolved by the bot.** GitHub refuses
+  `resolveReviewThread` without write access to the repository, which the bot
+  must not hold; the reply says whether a later change addressed the finding,
+  and a person resolves it — so every resolve in the precision signal is a human's.
 
 ## CI / deploy
 
