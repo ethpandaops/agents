@@ -7,6 +7,8 @@ Currently shipped:
 | Agent | What it does |
 |---|---|
 | [`reviewer`](agents/reviewer/) | Posts one high-signal code-review comment per pull request on `ethpandaops/*`. |
+| [`responder`](agents/responder/) | Answers when summoned (`redpanda …`) in a PR conversation, an inline review thread, or an issue. |
+| [`ci-doctor`](agents/ci-doctor/) | Diagnoses a PR's failed CI jobs from their logs and the code: cause, category, minimal fix. |
 
 ## How an agent is defined
 
@@ -124,6 +126,40 @@ an empty environment except for:
 
 These commands exist only in that container. A prompt that relies on them
 does nothing under a plain `mc run`.
+
+### Runs, and which agent each one gets
+
+| Mode | Trigger | Agent | Context file | What the pipeline posts |
+|---|---|---|---|---|
+| `review` | PR opened / pushed; or the `redpanda-review` label, which also reaches repos excluded from automatic review | `reviewer` | `pr-context.md` | the review, threads, approval |
+| `question` | a PR conversation comment starting `redpanda …` | `responder` | `question-context.md` | a reply comment |
+| `thread` | a reply in an inline review thread — ours, or any thread when it starts `redpanda …` | `responder` | `thread-context.md` | a thread reply; resolves our own finding when it no longer holds |
+| `ci` | a PR's workflow run failed | `ci-doctor` | `ci-context.md` | one CI comment per PR, edited in place; collapsed once CI is green |
+| `issue` | an issue comment starting `redpanda …`, or the label on an issue (off until the App has `issues: write`) | `responder` | `issue-context.md` | a reply comment |
+
+PRs over the size limits stay skipped in every mode, on-demand included.
+
+Every context may carry two sections the prompts are written against:
+
+- **Since the last review** (review mode) — the head sha we last reviewed, the
+  current head, whether one is an ancestor of the other, `git log` between them
+  and our open finding threads. The history is fetched into the checkout, so the
+  agent chooses its own scope with `git diff LAST..HEAD`.
+- **Repository guidance** — the maintainers' `AGENTS.md` (and `CLAUDE.md` when
+  it is a different file) read from the **base** branch, never the PR head,
+  capped at 16 KB each. It shapes what is worth flagging; it cannot change the
+  task or the output. The PR's own copies stay renamed `*.from-pr`.
+
+**The structure is enforced after the agent, not trusted from it.** Once pi
+exits, `finalize-structured.js` (bruno `events-ingress`) replays the session to
+`starflinger-openai` with one more user turn and a strict JSON schema, which
+the engine enforces: `{summary, findings[]}` for review, `{reply, resolve}` for
+thread, `{summary, failures[]}` for ci. That step may add nothing the session
+did not establish. The reviewer's closing `json` block stays in the prompt as
+the draft, and as the fallback: if finalizing fails, review mode parses the
+last `json` block as before (`findings_source: text` in the outcome), while
+thread and ci runs fail. The schemas live in that script, so **changing a
+field means changing the prompt and the script together**, then moving the pin.
 
 ## CI / deploy
 

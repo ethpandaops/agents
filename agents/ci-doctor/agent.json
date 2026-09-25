@@ -1,6 +1,6 @@
 {
-  "name": "responder",
-  "description": "Answers when summoned (\"redpanda …\") in a PR comment, an inline review thread or an issue — grounded in the checked-out code, posted as a reply.",
+  "name": "ci-doctor",
+  "description": "Diagnoses failed CI jobs on a pull request from their log tails and the checked-out code — cause, category and the minimal fix, upserted as one comment per PR.",
   "model": "starflinger-anthropic",
   "provider": "local-llm",
   "thinking": "high",
